@@ -1,6 +1,6 @@
 const express = require('express')
 const cors = require('cors')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
 require('dotenv').config()
 const port = process.env.PORT || 7000;
@@ -33,11 +33,26 @@ async function run() {
 
    //Job related API
    const jobsCollection = client.db('CareerCraft').collection('jobs');
+   const jobApplyCollection = client.db('CareerCraft').collection('job-application');
    app.get('/jobs', async(req, res) =>{
     const cursor = jobsCollection.find();
     const result = await cursor.toArray();
     res.send(result);
    })
+ 
+    app.get('/jobs/:id', async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) }
+        const result = await jobsCollection.findOne(query);
+        res.send(result)
+    })
+   
+// job-application API
+   app.post('/job-application', async (req, res) => {
+    const application = req.body;
+    const result = await jobApplyCollection.insertOne(application)
+    res.send(result)
+  })
 
   } finally {
     // Ensures that the client will close when you finish/error
