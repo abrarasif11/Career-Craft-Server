@@ -35,23 +35,50 @@ async function run() {
 
     // ================= Jobs API =================
     app.get("/jobs", async (req, res) => {
-      const cursor = jobsCollection.find();
+      const email = req.query.email;
+      let query = {};
+      if(email) {
+        query = { hr_email: email }
+      }
+      const cursor = jobsCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
 
-    app.get("/jobs/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await jobsCollection.findOne(query);
-      res.send(result);
-    });
+// ================= Jobs API =================
+app.get("/jobs", async (req, res) => {
+  try {
+    const email = req.query.email;
+    let query = {};
+    if (email) {
+      query = { hr_email: email }; //  consistent field name
+    }
+    const cursor = jobsCollection.find(query);
+    const result = await cursor.toArray();
+    res.send(result);
+  } catch (error) {
+    console.error("Error fetching jobs:", error);
+    res.status(500).send({ error: "Failed to fetch jobs" });
+  }
+});
 
-    app.post('/jobs', async(req,res) =>{
+app.post("/jobs", async (req, res) => {
+  try {
     const newJob = req.body;
-    const result = await jobsCollection.insertOne(newJob)
-    res.send(result)
-    })
+
+    //  Ensure hr_email exists before insert
+    if (!newJob.hr_email) {
+      return res.status(400).send({ error: "hr_email is required" });
+    }
+
+    const result = await jobsCollection.insertOne(newJob);
+    res.send(result);
+  } catch (error) {
+    console.error("Error inserting job:", error);
+    res.status(500).send({ error: "Failed to insert job" });
+  }
+});
+
 
     // ================= Job Application API =================
     app.get("/job-application", async (req, res) => {
@@ -68,6 +95,7 @@ async function run() {
           application.company = job.company;
           application.company_logo = job.company_logo;
           application.location = job.location;
+          application.applicationDeadline = job.applicationDeadline;
         }
       }
 
