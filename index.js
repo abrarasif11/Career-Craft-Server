@@ -37,69 +37,81 @@ async function run() {
     app.get("/jobs", async (req, res) => {
       const email = req.query.email;
       let query = {};
-      if(email) {
-        query = { hr_email: email }
+      if (email) {
+        query = { hr_email: email };
       }
       const cursor = jobsCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
 
-// ================= Jobs API =================
-app.get("/jobs", async (req, res) => {
-  try {
-    const email = req.query.email;
-    let query = {};
-    if (email) {
-      query = { hr_email: email }; //  consistent field name
-    }
-    const cursor = jobsCollection.find(query);
-    const result = await cursor.toArray();
-    res.send(result);
-  } catch (error) {
-    console.error("Error fetching jobs:", error);
-    res.status(500).send({ error: "Failed to fetch jobs" });
-  }
-});
+    // ================= Jobs API =================
+    app.get("/jobs", async (req, res) => {
+      try {
+        const email = req.query.email;
+        let query = {};
+        if (email) {
+          query = { hr_email: email }; //  consistent field name
+        }
+        const cursor = jobsCollection.find(query);
+        const result = await cursor.toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching jobs:", error);
+        res.status(500).send({ error: "Failed to fetch jobs" });
+      }
+    });
 
-app.post("/jobs", async (req, res) => {
-  try {
-    const newJob = req.body;
+    app.post("/jobs", async (req, res) => {
+      try {
+        const newJob = req.body;
 
-    //  Ensure hr_email exists before insert
-    if (!newJob.hr_email) {
-      return res.status(400).send({ error: "hr_email is required" });
-    }
+        //  Ensure hr_email exists before insert
+        if (!newJob.hr_email) {
+          return res.status(400).send({ error: "hr_email is required" });
+        }
 
-    const result = await jobsCollection.insertOne(newJob);
-    res.send(result);
-  } catch (error) {
-    console.error("Error inserting job:", error);
-    res.status(500).send({ error: "Failed to insert job" });
-  }
-});
-
+        const result = await jobsCollection.insertOne(newJob);
+        res.send(result);
+      } catch (error) {
+        console.error("Error inserting job:", error);
+        res.status(500).send({ error: "Failed to insert job" });
+      }
+    });
 
     // ================= Job Application API =================
     app.get("/job-application", async (req, res) => {
-      const email = req.query.email;
-      const query = { applicant_email: email };
-      const result = await jobApplyCollection.find(query).toArray();
-
-      // Add job details to applications
-      for (const application of result) {
-        const query1 = { _id: new ObjectId(application.job_id) };
-        const job = await jobsCollection.findOne(query1);
-        if (job) {
-          application.title = job.title;
-          application.company = job.company;
-          application.company_logo = job.company_logo;
-          application.location = job.location;
-          application.applicationDeadline = job.applicationDeadline;
+      try {
+        const email = req.query.email;
+        if (!email) {
+          return res.status(400).send({ error: "Email is required" });
         }
-      }
 
-      res.send(result);
+        const query = { applicant_email: email };
+        const result = await jobApplyCollection.find(query).toArray();
+
+        for (const application of result) {
+          if (ObjectId.isValid(application.job_id)) {
+            const job = await jobsCollection.findOne({
+              _id: new ObjectId(application.job_id),
+            });
+            if (job) {
+              application.title = job.title;
+              application.company = job.company;
+              application.company_logo = job.company_logo;
+              application.location = job.location;
+              application.applicationDeadline = job.applicationDeadline;
+            }
+          } else {
+            console.warn("Invalid job_id:", application.job_id);
+          }
+        }
+
+        res.send(result);
+      } catch (err) {
+        console.error("Error in /job-application:", err);
+        res.status(500).send({ error: "Internal Server Error" });
+      }
     });
 
     app.post("/job-application", async (req, res) => {
