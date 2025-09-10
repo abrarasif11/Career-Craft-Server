@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const cookieParser = require('cookie-parser')
-const jwt = require('jsonwebtoken');
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
@@ -9,13 +9,33 @@ require("dotenv").config();
 const port = process.env.PORT || 7000;
 
 // Middleware
-app.use(cors({
-  origin: "http://localhost:5173", // frontend origin
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: "http://localhost:5173", // frontend origin
+    credentials: true,
+  })
+);
 app.use(express.json());
-app.use(cookieParser())
+app.use(cookieParser());
 
+const logger = (req, res, next) => {
+  console.log("Inside the logger");
+  next();
+};
+
+const verifyToken = (req, res, next) => {
+  console.log("Inside the verify token", req.cookies);
+  const token = req?.cookies?.token;
+  if (!token) {
+    return res.status(401).send({ message: "Unauthorized Access" });
+  }
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "Unauthorized Access" });
+    }
+  });
+  next();
+};
 //Mongo Code
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vhdpi0m.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -45,16 +65,15 @@ async function run() {
       const user = req.body;
       const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1h" });
       res
-      .cookie('token', token, {
-        httpOnly: true,
-        secure: false,
-        
-      })
-      .send({ success: true });
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: false,
+        })
+        .send({ success: true });
     });
 
     // ================= Jobs API =================
-    app.get("/jobs", async (req, res) => {
+    app.get("/jobs", logger, async (req, res) => {
       const email = req.query.email;
       let query = {};
       if (email) {
@@ -100,7 +119,7 @@ async function run() {
     });
 
     // ================= Job Application API =================
-    app.get("/job-application", async (req, res) => {
+    app.get("/job-application", verifyToken, async (req, res) => {
       try {
         const email = req.query.email;
         if (!email) {
@@ -108,7 +127,7 @@ async function run() {
         }
 
         const query = { applicant_email: email };
-        console.log('cuk cuk cuk', req.cookies);
+        console.log("cuk cuk cuk", req.cookies);
         const result = await jobApplyCollection.find(query).toArray();
 
         for (const application of result) {
