@@ -33,8 +33,10 @@ const verifyToken = (req, res, next) => {
     if (err) {
       return res.status(401).send({ message: "Unauthorized Access" });
     }
+    req.user = decoded;
+    next();
   });
-  next();
+ 
 };
 //Mongo Code
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vhdpi0m.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -122,12 +124,12 @@ async function run() {
     app.get("/job-application", verifyToken, async (req, res) => {
       try {
         const email = req.query.email;
-        if (!email) {
-          return res.status(400).send({ error: "Email is required" });
+        const query = { applicant_email: email };
+       
+        if(req.user.email !== req.query.email){
+          return res.status(403).send({ message : 'Forbidden Access'})
         }
 
-        const query = { applicant_email: email };
-        console.log("cuk cuk cuk", req.cookies);
         const result = await jobApplyCollection.find(query).toArray();
 
         for (const application of result) {
