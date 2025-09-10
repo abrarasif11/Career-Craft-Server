@@ -10,7 +10,7 @@ const port = process.env.PORT || 7000;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173/'],
+  origin: "http://localhost:5173", // frontend origin
   credentials: true
 }));
 app.use(express.json());
@@ -108,6 +108,7 @@ async function run() {
         }
 
         const query = { applicant_email: email };
+        console.log('cuk cuk cuk', req.cookies);
         const result = await jobApplyCollection.find(query).toArray();
 
         for (const application of result) {
