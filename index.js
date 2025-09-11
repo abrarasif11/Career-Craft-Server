@@ -26,17 +26,17 @@ const logger = (req, res, next) => {
 const verifyToken = (req, res, next) => {
   const token = req?.cookies?.token;
   if (!token) {
-      return res.status(401).send({ message: 'unAuthorized access' })
+    return res.status(401).send({ message: "unAuthorized access" });
   }
 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-      if (err) {
-          return res.status(401).send({ message: 'unauthorized access' })
-      }
-      req.user = decoded;
-      next();
-  })
-}
+    if (err) {
+      return res.status(401).send({ message: "unauthorized access" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
 //Mongo Code
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vhdpi0m.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -76,14 +76,27 @@ async function run() {
     // ================= Jobs API =================
     app.get("/jobs", logger, async (req, res) => {
       const email = req.query.email;
+      const sort = req.query?.sort; // "true" or "false"
       let query = {};
+      let sortQuery = {};
+    
       if (email) {
         query = { hr_email: email };
       }
-      const cursor = jobsCollection.find(query);
+    
+      if (sort === "true") {
+        // Sort salaries descending
+        sortQuery = { "salaryRange.min": -1 };
+      } else {
+        // Default (ascending)
+        sortQuery = { "salaryRange.min": 1 };
+      }
+    
+      const cursor = jobsCollection.find(query).sort(sortQuery);
       const result = await cursor.toArray();
       res.send(result);
     });
+    
 
     // ================= Jobs API =================
     app.get("/jobs", async (req, res) => {
@@ -124,7 +137,7 @@ async function run() {
       try {
         const email = req.query.email;
         const query = { applicant_email: email };
-       
+
         // if(req.user.email !== req.query.email){
         //   return res.status(403).send({ message : 'Forbidden Access'})
         // }
