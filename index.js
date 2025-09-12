@@ -78,11 +78,12 @@ async function run() {
       const email = req.query.email;
       const sort = req.query?.sort;
       const search = req.query?.search;
-      const min = req.query?.min;
-      const max = req.query?.max;
+      const min = req.query?.minSalary;
+      const max = req.query?.maxSalary;
 
       let query = {};
       let sortQuery = {};
+      console.log(req.query)
 
       if (email) {
         query = { hr_email: email };
@@ -101,8 +102,8 @@ async function run() {
       if (min && max) {
         query = {
           ...query,
-          "salaryRange.min": { $gte: min },
-          "salaryRange.max": { $lte: max },
+          "salaryRange.min": { $gte: parseInt(min) },
+          "salaryRange.max": { $lte: parseInt(max) },
         };
       }
       console.log(query);
@@ -112,25 +113,26 @@ async function run() {
     });
 
     // ================= Jobs API =================
-    app.get("/jobs", async (req, res) => {
-      try {
-        const email = req.query.email;
-        let query = {};
-        if (email) {
-          query = { hr_email: email }; //  consistent field name
-        }
-        const cursor = jobsCollection.find(query);
-        const result = await cursor.toArray();
-        res.send(result);
-      } catch (error) {
-        console.error("Error fetching jobs:", error);
-        res.status(500).send({ error: "Failed to fetch jobs" });
-      }
-    });
+    // app.get("/jobs", async (req, res) => {
+    //   try {
+    //     const email = req.query.email;
+    //     let query = {};
+    //     if (email) {
+    //       query = { hr_email: email }; //  consistent field name
+    //     }
+    //     const cursor = jobsCollection.find(query);
+    //     const result = await cursor.toArray();
+    //     res.send(result);
+    //   } catch (error) {
+    //     console.error("Error fetching jobs:", error);
+    //     res.status(500).send({ error: "Failed to fetch jobs" });
+    //   }
+    // });
 
     app.post("/jobs", async (req, res) => {
       try {
         const newJob = req.body;
+        console.log(newJob);
 
         //  Ensure hr_email exists before insert
         if (!newJob.hr_email) {
