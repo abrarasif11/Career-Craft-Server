@@ -53,7 +53,7 @@ async function run() {
   try {
     await client.connect();
     await client.db("admin").command({ ping: 1 });
-    console.log("✅ Connected to MongoDB!");
+    console.log("Connected to MongoDB!");
 
     // Collections
     const jobsCollection = client.db("CareerCraft").collection("jobs");
@@ -216,5 +216,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Server running on PORT: ${port}`);
+  console.log(`Server running on PORT: ${port}`);
 });
